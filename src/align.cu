@@ -259,7 +259,6 @@ void smith_water_cpu(Matrix h, Matrix d, char seqA[], char seqB[]) {
   // traceback
   std::vector<char> seqA_aligned;
   std::vector<char> seqB_aligned;
-  traceback(d, max_id, seqA, seqB, seqA_aligned, seqB_aligned);
 
   // print aligned sequences
   io_seq(seqA_aligned, seqB_aligned);
@@ -301,12 +300,14 @@ void smith_water_gpu(Matrix h, Matrix d, char seqA[], char seqB[]) {
 
     // loop over diagonals of the matrix
     for (int i = 1; i <= (strlen(seqA) + strlen(seqB) - 1); i++) {
+      // i là chỉ số đường chéo, ma trận đang có max là (strlen(seqA) + strlen(seqB) - 1) đường chéo
         int col_idx = max(0, (i - strlen(seqB)));
+        // biến này là chỉ số cột đầu tiên của một đường chéo
         int diag_len = min(i, (strlen(seqA) - col_idx));
-
+        // biến này là chiều dài của đường chéo
         // launch the kernel: one block by length of diagonal
-        int blks = 1;
-        dim3 dimBlock(diag_len / blks);
+        int blks = 1; //1 block
+        dim3 dimBlock(diag_len / blks); //kích thước của mỗi block, ở đây mỗi block có số thread bằng số phần tử có trong đường chéo ngược
         dim3 dimGrid(blks);
         fill_gpu<<<dimGrid, dimBlock>>>(d_h, d_d, d_seqA, d_seqB, i, d_max_id_val);
         cudaDeviceSynchronize();
@@ -456,7 +457,7 @@ int main() {
   read_sequence_from_file("D:\\Gpu-SW\\src\\a.txt", seqA, 1);
 
   std::vector<std::pair<int, std::string>> scores;
-  const int num_threads = std::thread::hardware_concurrency(); // Get the number of available threads
+  const int num_threads = 2; // Get the number of available threads
   auto start_time = std::chrono::high_resolution_clock::now();
 
   read_and_compare_sequences_from_file("D:\\Gpu-SW\\src\\dog.txt", seqA, scores, num_threads);
@@ -482,6 +483,6 @@ int main() {
       maxNumber = number;
     }
   }
-  std::cout << "Dự đoán loài: " << maxNumber << std::endl;
+  std::cout << maxNumber << std::endl;
 
 }
